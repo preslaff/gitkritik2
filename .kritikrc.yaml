@@ -2,7 +2,7 @@
 
 platform: github
 strategy: diff
-model: models/gemma-3-27b-it
+model: models/codegemma-7b-it
 llm_provider: gemini  # or claude, gemini, local
 repo: org/repo
 pr_number: "42"
