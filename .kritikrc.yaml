@@ -2,7 +2,7 @@
 
 platform: github
 strategy: hybrid
-model: models/gemini-1.5-pro-latest
+model: models/gemma-3-27b-it
 llm_provider: gemini  # or claude, gemini, local
 repo: org/repo
 pr_number: "42"

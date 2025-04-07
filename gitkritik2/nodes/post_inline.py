@@ -15,7 +15,7 @@ def post_inline(state: dict) -> dict:
         print("[post_inline] Skipping — dry run mode")
         return state
 
-    platform = state.kritik_config.platform
+    platform = state.platform
     comments = state.inline_comments
 
     if not comments:
@@ -23,9 +23,9 @@ def post_inline(state: dict) -> dict:
         return state
 
     if platform == "github":
-        post_inline_comment_github(state.kritik_config, comments)
+        post_inline_comment_github(state, comments)
     elif platform == "gitlab":
-        post_inline_comment_gitlab(state.kritik_config, comments)
+        post_inline_comment_gitlab(state, comments)
     else:
         print(f"[post_inline] Unsupported platform: {platform}")
 

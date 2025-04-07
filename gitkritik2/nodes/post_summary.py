@@ -18,12 +18,12 @@ def post_summary(state: dict) -> dict:
         print("[post_summary] No summary to post")
         return state
 
-    platform = state.kritik_config.platform
+    platform = state.platform
 
     if platform == "github":
-        post_summary_comment_github(state.kritik_config, summary)
+        post_summary_comment_github(state, summary)
     elif platform == "gitlab":
-        post_summary_comment_gitlab(state.kritik_config, summary)
+        post_summary_comment_gitlab(state, summary)
     else:
         print(f"[post_summary] Unsupported platform: {platform}")
 
