@@ -61,7 +61,7 @@ def prepare_context(state: dict) -> dict:
             before=before,
             after=after,
             diff=diff_summary,
-            strategy=state.kritik_config.strategy
+            strategy=state.strategy
         )
 
         if full_chunk:

@@ -7,6 +7,8 @@ from typing import Optional
 from gitkritik2.core.models import ReviewState
 from gitkritik2.graph.build_graph import build_review_graph
 from gitkritik2.cli.display import render_review_result
+from dotenv import load_dotenv
+load_dotenv()
 
 app = typer.Typer()
 

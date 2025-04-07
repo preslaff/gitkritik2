@@ -2,7 +2,7 @@
 
 platform: github
 strategy: hybrid
-model: models/gemini-1.5-pro-latest
-llm_provider: gemini  # or claude, gemini, local
+model: claude-3-7-sonnet-20250219
+llm_provider: claude  # or claude, gemini, local
 repo: org/repo
 pr_number: "42"

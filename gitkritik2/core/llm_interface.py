@@ -15,7 +15,7 @@ def call_llm(system_prompt: str, user_prompt: str, state: ReviewState, common: d
             raise ValueError("❌ OPENAI_API_KEY is missing.")
         return call_openai(system_prompt, user_prompt, state, common)
 
-    elif provider == "anthropic":
+    elif provider == "claude":
         api_key = state.anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("❌ ANTHROPIC_API_KEY is missing.")
