@@ -1,0 +1,20 @@
+stages:
+  - gitkritik2
+
+ai_code_review:
+  stage: gitkritik2
+  image: python:3.10
+  before_script:
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install poetry
+    - poetry install
+  script:
+    - git kritik2 --ci
+  only:
+    - merge_requests
+  variables:
+    GITKRITIK_CI_MODE: "true"
+    OPENAI_API_KEY: "$OPENAI_API_KEY"
+    CI_PROJECT_PATH: "$CI_PROJECT_PATH"
+    CI_MERGE_REQUEST_IID: "$CI_MERGE_REQUEST_IID"

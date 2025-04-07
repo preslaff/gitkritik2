@@ -3,20 +3,19 @@
 # Platform can be 'github' or 'gitlab'
 platform: github
 
-# Which LLM model to use (depends on the provider)
-model: gemma-3-27b-it
-
 # Strategy for how much code context to give the AI: diff, full, or hybrid
 strategy: diff
 
-# Provider: openai, anthropic, gemini, local
+# Which LLM model to use (depends on the provider)
+model: models/codegemma-7b-it  # or gemma-3-27b-it
+
+# LLM Provider: openai, anthropic, gemini, local
 llm_provider: gemini
 
-# (Optional) Hardcoded fallback repo and PR/MR if not provided by CI
-# Normally injected by GitHub/GitLab
-# repo: my-org/my-repo
-# pr_number: 42
+# Optional fallback repo and PR/MR number (injected automatically in CI)
+repo: org/repo
+pr_number: "42"
 
-# Optional runtime behavior (defaults used if not provided)
-# max_tokens: 2048
-# temperature: 0.3
+# Optional runtime behavior
+max_tokens: 2048
+temperature: 0.3
