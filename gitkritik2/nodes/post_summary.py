@@ -1,5 +1,3 @@
-# nodes/post_summary.py
-
 import os
 from gitkritik2.core.models import ReviewState
 from gitkritik2.platform.github import post_summary_comment_github
@@ -9,6 +7,7 @@ from gitkritik2.core.utils import ensure_review_state
 def post_summary(state: dict) -> dict:
     print("[post_summary] Posting summary comment")
     state = ensure_review_state(state)
+
     if os.getenv("GITKRITIK_DRY_RUN") == "true":
         print("[post_summary] Skipping — dry run mode")
         return state
@@ -27,9 +26,4 @@ def post_summary(state: dict) -> dict:
     else:
         print(f"[post_summary] Unsupported platform: {platform}")
 
-    #Debbuging the dict error
-    
     return state.model_dump()
-
-
-

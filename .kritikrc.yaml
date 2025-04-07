@@ -1,8 +1,21 @@
 # .kritikrc.yaml
 
+# Platform can be 'github' or 'gitlab'
 platform: github
+
+# Strategy for how much code context to give the AI: diff, full, or hybrid
 strategy: diff
-model: models/codegemma-7b-it
-llm_provider: gemini  # or claude, gemini, local
+
+# Which LLM model to use (depends on the provider)
+model: models/codegemma-7b-it  # or gemma-3-27b-it
+
+# LLM Provider: openai, anthropic, gemini, local
+llm_provider: gemini
+
+# Optional fallback repo and PR/MR number (injected automatically in CI)
 repo: org/repo
 pr_number: "42"
+
+# Optional runtime behavior
+max_tokens: 2048
+temperature: 0.3
