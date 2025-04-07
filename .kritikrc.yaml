@@ -1,7 +1,7 @@
 # .kritikrc.yaml
 
 platform: github
-strategy: hybrid
+strategy: diff
 model: models/gemma-3-27b-it
 llm_provider: gemini  # or claude, gemini, local
 repo: org/repo
