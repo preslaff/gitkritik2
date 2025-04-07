@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "gitkritik2"
+version = "0.1.0"
+description = "AI-powered code review CLI and CI agent for Git."
+authors = ["preslaff@gmail.com"]
+readme = "README.md"
+packages = [{ include = "gitkritik2" }]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.14"
+typer = { extras = ["all"], version = "^0.9" }
+rich = "^13.0"
+openai = "^1.12.0"
+PyYAML = "^6.0"
+pydantic = "^2.0"
+langgraph = "^0.0.41"
+langchain-core = "^0.1.53"
+python-dotenv = "^1.0.1"
+numpy = "^2.2.0"  # ✅ Latest supported in Windows (binary available)
+python-dateutil = "^2.9.0.post0"
+httpx = "^0.28.1"
+anthropic = "^0.49.0"
+google-generativeai = "^0.8.4"
+transformers = "^4.50.3"
+torch = "^2.6.0"
+accelerate = "^1.6.0"
+
+[tool.poetry.scripts]
+git-kritik2 = "gitkritik2.cli.main:app"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
