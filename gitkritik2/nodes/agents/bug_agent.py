@@ -2,12 +2,12 @@
 
 from gitkritik2.core.models import ReviewState, AgentResult, Comment
 from gitkritik2.core.llm_interface import call_llm
-
+from gitkritik2.core.utils import ensure_review_state
 
 def bug_agent(state: ReviewState) -> ReviewState:
     print("[bug_agent] Reviewing files for potential bugs")
     all_comments = []
-    state = ReviewState(**state)
+    state = ensure_review_state(state)
     for filename, context in state.file_contexts.items():
         if not context.after:
             continue
@@ -42,5 +42,5 @@ def bug_agent(state: ReviewState) -> ReviewState:
                     continue
 
     state.agent_results["bug"] = AgentResult(agent_name="bug", comments=all_comments)
-    return state.model_dump()  # ✅ converts ReviewState → dict
+    return state.model_dump()  # converts ReviewState → dict
 

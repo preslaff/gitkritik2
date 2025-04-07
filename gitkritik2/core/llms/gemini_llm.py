@@ -9,6 +9,7 @@ def call_gemini(
     common: Dict[str, Any],
     debug_models: bool = False
 ) -> str:
+
     if not state.gemini_api_key:
         raise ValueError("Gemini API key is not configured.")
 

@@ -62,13 +62,10 @@ def detect_ci_context(state: dict) -> dict:
 
     print(f"Platform: {platform}, Repo: {repo}, Branch: {branch}, PR/MR #: {pr_number or 'Not found'}")
 
-    state.kritik_config = Settings(
-        platform=platform,
-        repo=repo,
-        pr_number=pr_number,
-        model=state.kritik_config.model if state.kritik_config else "gpt-4",
-        strategy=state.kritik_config.strategy if state.kritik_config else "hybrid"
-    )
+    # ✅ Only update values — do NOT overwrite state!
+    state.platform = platform
+    state.repo = repo
+    state.pr_number = pr_number
 
     #Debbuging the dict error
     
