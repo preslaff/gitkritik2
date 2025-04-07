@@ -2,12 +2,12 @@
 
 from gitkritik2.core.models import ReviewState, AgentResult, Comment
 from gitkritik2.core.llm_interface import call_llm
-
+from gitkritik2.core.utils import ensure_review_state
 
 def context_agent(state: ReviewState) -> ReviewState:
     print("[context_agent] Performing design-level review")
     all_comments = []
-    state = ReviewState(**state)
+    state = ensure_review_state(state)
     for filename, context in state.file_contexts.items():
         if not context.after:
             continue

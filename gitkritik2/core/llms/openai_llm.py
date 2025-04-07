@@ -4,6 +4,7 @@ from typing import Dict, Any
 import datetime
 
 def call_openai(system_prompt: str, user_prompt: str, state: ReviewState, common: Dict[str, Any], debug_quota=False) -> str:
+    
     if not state.openai_api_key:
         raise ValueError("OpenAI API key is not configured.")
 

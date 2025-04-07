@@ -2,10 +2,12 @@
 
 from gitkritik2.core.models import ReviewState, AgentResult
 from gitkritik2.core.llm_interface import call_llm
+from gitkritik2.core.utils import ensure_review_state
 
 def summary_agent(state: ReviewState) -> ReviewState:
     print("[summary_agent] Generating high-level summary")
-    state = ReviewState(**state)
+    state = ensure_review_state(state)
+
     # Merge all file contexts into a single summary input
     summary_input = ""
     for filename, context in state.file_contexts.items():

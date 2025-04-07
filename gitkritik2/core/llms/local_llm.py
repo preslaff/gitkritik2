@@ -16,6 +16,8 @@ def call_local(system_prompt: str, user_prompt: str, settings: Settings, common:
     - Ollama API (http://localhost:11434)
     - Hugging Face Transformers (locally loaded models)
     """
+    
+
     backend = os.getenv("GITKRITIK_LOCAL_BACKEND", "ollama").lower()
 
     if backend == "ollama":

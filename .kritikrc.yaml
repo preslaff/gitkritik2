@@ -7,14 +7,14 @@ platform: github
 strategy: diff
 
 # Which LLM model to use (depends on the provider)
-model: models/codegemma-7b-it  # or gemma-3-27b-it
+model: gemma-3-27b-it  # or gemma-3-27b-it
 
 # LLM Provider: openai, anthropic, gemini, local
 llm_provider: gemini
 
 # Optional fallback repo and PR/MR number (injected automatically in CI)
-repo: org/repo
-pr_number: "42"
+#repo: org/repo
+#pr_number: "42"
 
 # Optional runtime behavior
 max_tokens: 2048
