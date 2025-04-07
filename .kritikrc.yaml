@@ -16,7 +16,8 @@ llm_provider: gemini
 # Normally injected by GitHub/GitLab
 # repo: my-org/my-repo
 # pr_number: 42
-
 # Optional runtime behavior (defaults used if not provided)
 # max_tokens: 2048
 # temperature: 0.3
+
+

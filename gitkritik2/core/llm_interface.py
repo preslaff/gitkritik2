@@ -12,23 +12,23 @@ def call_llm(system_prompt: str, user_prompt: str, state: ReviewState, common: d
     if provider == "openai":
         api_key = state.openai_api_key or os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError("❌ OPENAI_API_KEY is missing.")
+            raise ValueError("OPENAI_API_KEY is missing.")
         return call_openai(system_prompt, user_prompt, state, common)
 
     elif provider == "claude":
         api_key = state.anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
-            raise ValueError("❌ ANTHROPIC_API_KEY is missing.")
+            raise ValueError("ANTHROPIC_API_KEY is missing.")
         return call_claude(system_prompt, user_prompt, state, common)
 
     elif provider == "gemini":
         api_key = state.gemini_api_key or os.getenv("GEMINI_API_KEY")
         if not api_key:
-            raise ValueError("❌ GEMINI_API_KEY is missing.")
+            raise ValueError("GEMINI_API_KEY is missing.")
         return call_gemini(system_prompt, user_prompt, state, common)
 
     elif provider == "local":
         return call_local(system_prompt, user_prompt, state, common)
 
     else:
-        raise ValueError(f"❌ Unsupported LLM provider: {provider}")
+        raise ValueError(f"Unsupported LLM provider: {provider}")
