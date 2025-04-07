@@ -1,3 +1,23 @@
-.env
+# Python artifacts
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.env
+
+# VSCode
+.vscode/
+.idea/
+
+# Pytest cache
+.pytest_cache/
+.mypy_cache/
+
+# Poetry (optional)
+poetry.lock
+
+# Virtual environments
+.venv/
+env/
+venv/
