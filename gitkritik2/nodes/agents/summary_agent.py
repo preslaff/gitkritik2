@@ -6,7 +6,7 @@ from gitkritik2.core.utils import ensure_review_state
 
 def summary_agent(state: ReviewState) -> ReviewState:
     print("[summary_agent] Generating high-level summary")
-    state = ensure_review_state(state)
+    state = ReviewState(**state)
 
     # Merge all file contexts into a single summary input
     summary_input = ""
