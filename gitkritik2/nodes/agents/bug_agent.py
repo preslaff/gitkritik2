@@ -7,7 +7,7 @@ from gitkritik2.core.utils import ensure_review_state
 def bug_agent(state: ReviewState) -> ReviewState:
     print("[bug_agent] Reviewing files for potential bugs")
     all_comments = []
-    state = ensure_review_state(state)
+    state = ReviewState(**state)
     for filename, context in state.file_contexts.items():
         if not context.after:
             continue
