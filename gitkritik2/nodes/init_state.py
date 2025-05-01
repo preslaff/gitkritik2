@@ -37,8 +37,10 @@ def init_state(state: dict) -> dict:
     ci_repo = os.getenv("GITHUB_REPOSITORY") or os.getenv("CI_PROJECT_PATH")
     ci_pr_mr_num = os.getenv("GITHUB_PR_NUMBER") or os.getenv("CI_MERGE_REQUEST_IID")
 
-    state['repo'] = os.getenv("GITKRITIK_REPO") or ci_repo or yaml_config.get("repo")
-    state['pr_number'] = os.getenv("GITKRITIK_PR_NUMBER") or ci_pr_mr_num or yaml_config.get("pr_number")
+    #state['repo'] = os.getenv("GITKRITIK_REPO") or ci_repo or yaml_config.get("repo")
+    #state['pr_number'] = os.getenv("GITKRITIK_PR_NUMBER") or ci_pr_mr_num or yaml_config.get("pr_number")
+    state['repo'] = os.getenv("GITHUB_REPOSITORY") or os.getenv("CI_PROJECT_PATH")
+    state['pr_number'] = os.getenv("GITHUB_PR_NUMBER") or os.getenv("CI_MERGE_REQUEST_IID")
 
     # API Keys (Loaded ONLY from environment variables for security)
     state['openai_api_key'] = os.getenv("OPENAI_API_KEY")

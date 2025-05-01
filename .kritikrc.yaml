@@ -7,14 +7,15 @@ platform: github
 strategy: diff
 
 # Which LLM model to use (depends on the provider)
-#model: gemma-3-27b-it  # or gemma-3-27b-it
+#model: gemini-2.5-pro-exp-03-25  # or gemma-3-27b-it
 model: claude-3-7-sonnet-20250219
+#model: gpt-4
 
 # LLM Provider: openai, anthropic, gemini, local
 llm_provider: anthropic
 
 # Optional fallback repo and PR/MR number (injected automatically in CI)
-#repo: org/repo
+repo: preslaff/gitkritik2
 #pr_number: "42"
 
 # Optional runtime behavior
