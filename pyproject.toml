@@ -1,34 +1,66 @@
 [tool.poetry]
-name = "gitkritik2"
-version = "0.1.0"
-description = "AI-powered code review CLI and CI agent for Git."
-authors = ["preslaff@gmail.com"]
+name = "gitkritik" # Package name (lowercase)
+version = "0.2.0" # Increment version after significant refactoring
+description = "AI-powered code review CLI and CI agent for Git, using LangGraph."
+authors = ["Your Name <preslaff@gmail.com>"] # Update with your name
+license = "MIT"
 readme = "README.md"
-packages = [{ include = "gitkritik2" }]
+homepage = "https://github.com/your-username/gitkritik" # Replace with your repo URL
+repository = "https://github.com/your-username/gitkritik" # Replace with your repo URL
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Version Control :: Git",
+    "Topic :: Software Development :: Quality Assurance",
+]
+packages = [{include = "gitkritik2"}] # Assuming your source code is in 'gitkritik2' directory
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.14"
-typer = { extras = ["all"], version = "^0.9" }
-rich = "^13.0"
-openai = "^1.12.0"
-PyYAML = "^6.0"
-pydantic = "^2.0"
-langgraph = "^0.0.41"
-langchain-core = "^0.1.53"
-python-dotenv = "^1.0.1"
-numpy = "^2.2.0"  # ✅ Latest supported in Windows (binary available)
-python-dateutil = "^2.9.0.post0"
-httpx = "^0.28.1"
-anthropic = "^0.49.0"
-google-generativeai = "^0.8.4"
-transformers = "^4.50.3"
-torch = "^2.6.0"
-accelerate = "^1.6.0"
+python = "^3.10" # LangChain often needs newer Python versions
+
+# Core & CLI
+typer = {extras = ["rich"], version = "^0.9.0"} # CLI framework with rich support
+rich = "^13.7.0" # Rich terminal output
+pydantic = "^2.5.0" # Data models
+pyyaml = "^6.0" # Loading .kritikrc.yaml
+python-dotenv = "^1.0.0" # Loading .env files
+requests = "^2.31.0" # Platform API calls
+
+# LangChain & LangGraph - Target compatible late 0.1.x versions
+langchain = "^0.3.0"           # Keep
+langgraph = "^0.2.0"           # Keep
+langchain-core = "^0.3.52"     # Keep
+langchain-openai = "^0.3.0"    # <-- CHANGE THIS LINE (was ^0.1.6)
+langchain-anthropic = "^0.3.0" # Keep
+langchain-google-genai = "^2.1.3" # Keep
+langchain-community = "^0.3.0" # Keep
+
+# Utilities
+unidiff = "^0.7.5" # For potentially more robust diff parsing (recommended for diff_utils)
+
+# Optional dependencies (Uncomment if needed)
+# jedi = "^0.19.1" # If implementing Jedi-based symbol lookup in tools.py
+# transformers = "^4.35.0" # If using local HF models directly (not via Ollama)
+# torch = "^2.1.0" # Dependency for transformers
+# accelerate = "^0.24.0" # Dependency for transformers
 
 [tool.poetry.scripts]
-git-kritik2 = "gitkritik2.cli.main:app"
+# Defines an entry point, useful for `poetry run kritik`
+# Git extension mechanism might rely on executable naming (`git-kritik`)
+kritik = "gitkritik2.cli.main:app"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+ruff = "^0.1.9" # Linter & Formatter
+mypy = "^1.7.1" # Type checker
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
