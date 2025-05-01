@@ -1,21 +1,21 @@
 # .kritikrc.yaml
 
 # Platform can be 'github' or 'gitlab'
-platform: github
+#platform: github
 
 # Strategy for how much code context to give the AI: diff, full, or hybrid
 strategy: diff
 
 # Which LLM model to use (depends on the provider)
-#model: gemini-2.5-pro-exp-03-25  # or gemma-3-27b-it
-model: claude-3-7-sonnet-20250219
+model: gemini-2.5-pro-exp-03-25  # or gemma-3-27b-it
+#model: claude-3-7-sonnet-20250219
 #model: gpt-4
 
 # LLM Provider: openai, anthropic, gemini, local
-llm_provider: anthropic
+llm_provider: gemini
 
 # Optional fallback repo and PR/MR number (injected automatically in CI)
-repo: preslaff/gitkritik2
+#repo: preslaff/gitkritik2
 #pr_number: "42"
 
 # Optional runtime behavior
