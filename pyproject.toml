@@ -46,7 +46,7 @@ langchain-community = "^0.3.0" # Keep
 unidiff = "^0.7.5" # For potentially more robust diff parsing (recommended for diff_utils)
 
 # Optional dependencies (Uncomment if needed)
-# jedi = "^0.19.1" # If implementing Jedi-based symbol lookup in tools.py
+jedi = "^0.19.1"
 # transformers = "^4.35.0" # If using local HF models directly (not via Ollama)
 # torch = "^2.1.0" # Dependency for transformers
 # accelerate = "^0.24.0" # Dependency for transformers
