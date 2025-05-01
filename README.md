@@ -1,4 +1,4 @@
-# GitKritik
+# GitKritik2
 
 **AI-powered, context-aware code review CLI and CI agent for Git.**
 Built on [LangGraph](https://github.com/langchain-ai/langgraph), GitKritik brings multi-agent reasoning to your code changes, understanding symbols defined in other files (currently Python-only via Jedi) to provide deeper insights. It runs directly from your terminal or integrates into your CI pipeline.
