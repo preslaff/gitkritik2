@@ -1,24 +1,33 @@
 # core/utils.py
-from gitkritik2.core.models import ReviewState
+from gitkritik2.core.models import ReviewState # Import the model itself
+from pydantic import ValidationError # Import Pydantic's validation error
 
 def ensure_review_state(state_data) -> ReviewState:
-    """Ensures the input is a ReviewState object."""
+    """
+    Ensures the input is a ReviewState object.
+    If input is a dict, validates and converts it using Pydantic's
+    model_validate method, which correctly handles defaults.
+    """
     if isinstance(state_data, ReviewState):
         return state_data
     if isinstance(state_data, dict):
-        # Ensure nested models are handled correctly if necessary
-        # Pydantic should handle dict -> model conversion including nested ones
         try:
-            return ReviewState(**state_data)
+            # Use model_validate for robust dict -> model conversion
+            return ReviewState.model_validate(state_data)
+        except ValidationError as e:
+            # Catch Pydantic's specific validation error for better debugging
+            print(f"[ERROR] Pydantic validation failed casting dict to ReviewState:")
+            # Print simplified errors or the full list
+            print(e)
+            # Optionally print the problematic dictionary
+            # import json
+            # print("Problematic State Dict:")
+            # print(json.dumps(state_data, indent=2))
+            # Re-raise as TypeError or a custom exception for LangGraph
+            raise TypeError(f"Could not validate input dict as ReviewState: {e}") from e
         except Exception as e:
-            print(f"[ERROR] Failed to cast dict to ReviewState: {e}")
-            print(f"State Dict: {state_data}")
-            # Decide how to handle - raise error? return empty state?
+            # Catch other unexpected errors during validation
+            print(f"[ERROR] Unexpected error casting dict to ReviewState: {e}")
             raise TypeError(f"Could not convert input dict to ReviewState: {e}") from e
-    raise TypeError(f"Expected dict or ReviewState, got {type(state_data)}")
-
-# Removed map_comments_to_diff_lines (superseded by structured parsing + filtering)
-# Kept extract_diff_snippet if used elsewhere, otherwise remove
-# import re
-# def extract_diff_snippet(diff: str, target_line: int, context: int = 3) -> str:
-#     ... (implementation if needed) ...
+    # If it's neither a dict nor a ReviewState, raise error
+    raise TypeError(f"Input must be dict or ReviewState object, got {type(state_data)}")

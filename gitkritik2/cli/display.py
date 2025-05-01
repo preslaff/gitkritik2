@@ -1,5 +1,5 @@
 # cli/display.py
-
+from typing import List, Dict, Tuple
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.table import Table

@@ -4,13 +4,14 @@
 platform: github
 
 # Strategy for how much code context to give the AI: diff, full, or hybrid
-strategy: full
+strategy: diff
 
 # Which LLM model to use (depends on the provider)
-model: gemma-3-27b-it  # or gemma-3-27b-it
+#model: gemma-3-27b-it  # or gemma-3-27b-it
+model: claude-3-7-sonnet-20250219
 
 # LLM Provider: openai, anthropic, gemini, local
-llm_provider: gemini
+llm_provider: anthropic
 
 # Optional fallback repo and PR/MR number (injected automatically in CI)
 #repo: org/repo

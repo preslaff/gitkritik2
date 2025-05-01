@@ -1,16 +1,11 @@
 # nodes/format_output.py
 from typing import List, Dict, Any
-from gitkritik2.core.models import Comment # Use Comment model for type hints
+# from gitkritik2.core.models import Comment # Keep if needed for type hints
 
 def format_output(state: dict) -> dict:
-    """
-    Formats inline comments for platform posting (e.g., adding markdown).
-    Also ensures a summary review exists.
-    Operates on state['inline_comments'] containing comment dictionaries.
-    """
     print("[format_output] Formatting comments for platform posting")
 
-    formatted_comments_data: List[Dict[str, Any]] = []
+    post_ready_comments_data: List[Dict[str, Any]] = []
     original_comments: List[dict] = state.get("inline_comments", [])
 
     if not original_comments:
@@ -22,28 +17,34 @@ def format_output(state: dict) -> dict:
                  print(f"[WARN] Skipping non-dict item in inline_comments: {comment_dict}")
                  continue
 
-            # Create the formatted message body for platforms
-            # Using Markdown emphasis for agent name
+            # Get original fields needed by Comment model AND for formatting
             agent_name = comment_dict.get("agent", "AI")
-            line_num = comment_dict.get("line", "N/A")
-            message = comment_dict.get("message", "*No message body*")
+            line_num = comment_dict.get("line") # Assume required
+            original_message = comment_dict.get("message") # Assume required
 
-            # Basic formatting - adjust Markdown/prefix as needed for GitHub/GitLab
-            formatted_body = f"**[{agent_name.capitalize()}]** (Line {line_num}):\n{message}"
+            if line_num is None or original_message is None:
+                 print(f"[WARN] Skipping comment missing line or message: {comment_dict}")
+                 continue
 
-            # Create a new dict for the formatted comment to avoid modifying original
-            # Pass through essential fields needed by platform posting functions
-            formatted_comment = {
-                "file": comment_dict.get("file"),
-                "line": comment_dict.get("line"),
-                "body": formatted_body, # The formatted message for the platform
-                # Include original message/agent if needed elsewhere, otherwise remove
-                # "original_message": message,
-                # "agent": agent_name,
+            # Create the formatted body for platforms
+            formatted_body = f"**[{agent_name.capitalize()}]** (Line {line_num}):\n{original_message}"
+
+            # Create a new dict that STILL conforms to Comment, plus the formatted body
+            output_comment = {
+                "file": comment_dict.get("file"), # Required
+                "line": line_num, # Required
+                "message": original_message, # REQUIRED by Comment model
+                "agent": agent_name, # Optional in Comment, but good to keep
+                # Add the formatted body under a specific key for posting nodes
+                "platform_body": formatted_body,
+                # Pass through reasoning if it exists and is needed?
+                # "reasoning": comment_dict.get("reasoning"),
             }
-            formatted_comments_data.append(formatted_comment)
+            post_ready_comments_data.append(output_comment)
 
-        state["inline_comments"] = formatted_comments_data # Replace with formatted ones
+        # Store the list containing dicts that are STILL valid Comment structures
+        # but have the extra 'platform_body' key
+        state["inline_comments"] = post_ready_comments_data
 
     # Ensure summary review exists (fallback generation)
     if not state.get("summary_review"):
@@ -61,7 +62,7 @@ def format_output(state: dict) -> dict:
             fallback_summary = "### AI Code Review Notes\n\n" + "\n\n".join(summary_lines)
         else:
             # Check if there were any inline comments at all
-            if formatted_comments_data:
+            if post_ready_comments_data:
                  fallback_summary = "AI review generated inline comments but no specific reasoning points."
             else:
                  fallback_summary = "AI review completed. No specific comments or summary points generated."
