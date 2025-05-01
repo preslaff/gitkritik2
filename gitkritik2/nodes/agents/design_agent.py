@@ -1,4 +1,5 @@
-# nodes/agents/style_agent.py
+# nodes/agents/design_agent.py
+# (Formerly context_agent.py)
 from typing import List, Dict
 from gitkritik2.core.models import ReviewState, AgentResult, Comment, LLMReviewResponse, FileContext
 from gitkritik2.core.llm_interface import get_llm
@@ -16,11 +17,11 @@ prompt_template = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are an expert code reviewer focused on clean code style, naming, formatting, and structure. "
+            "You are a senior software architect reviewing code for architectural and design concerns. "
             "Focus **only** on the lines changed in the provided diff (lines starting with '+' or modified lines implied by the hunk context). "
-            "Use the full file content for context only. "
-            "Identify issues related to variable/function naming, layout, formatting, readability, duplication, or function length/cohesion *within the changes*. "
-            "Provide specific suggestions where possible.\n"
+            "Use the full file content and any provided symbol definitions for context only. "
+            "Identify issues such as maintainability, cohesion, complexity, coupling, SRP violations, and adherence to clean code principles *within the changes*. "
+            "Suggest improvements where applicable.\n"
             "Provide comments with accurate line numbers relative to the *new* file version.\n\n"
             "Format Instructions:\n{format_instructions}",
         ),
@@ -35,22 +36,21 @@ prompt_template = ChatPromptTemplate.from_messages(
             "```\n"
             "{file_content}\n"
             "```\n\n"
-            # Style agent usually doesn't need external symbol context
-            # "Available Symbol Context (if any):\n"
-            # "{symbol_context}\n\n"
-            "Review the style of the changes shown in the diff ONLY, following the format instructions precisely.",
+            "Available Symbol Context (if any):\n"
+            "{symbol_context}\n\n"
+            "Review the design and architecture implications of the changes shown in the diff ONLY, following the format instructions precisely.",
         ),
     ]
 )
 
-def style_agent(state: dict) -> dict:
-    print("[style_agent] Reviewing files for style issues (LangChain refactor)")
+def design_agent(state: dict) -> dict:
+    print("[design_agent] Reviewing files for design/architecture issues (LangChain refactor)")
     _state = ensure_review_state(state)
     llm = get_llm(_state)
     if not llm:
-        print("[style_agent] LLM not available, skipping.")
+        print("[design_agent] LLM not available, skipping.")
         if "agent_results" not in state: state["agent_results"] = {}
-        state["agent_results"]["style"] = AgentResult(agent_name="style", comments=[], reasoning="LLM not available").model_dump()
+        state["agent_results"]["design"] = AgentResult(agent_name="design", comments=[], reasoning="LLM not available").model_dump()
         return state
 
     chain = (
@@ -63,32 +63,36 @@ def style_agent(state: dict) -> dict:
 
     for filename, context in _state.file_contexts.items():
         if not context.after or not context.diff:
-            print(f"[style_agent] Skipping {filename} - missing content or diff.")
+            print(f"[design_agent] Skipping {filename} - missing content or diff.")
             continue
 
-        print(f"[style_agent] Processing {filename}...")
+        print(f"[design_agent] Processing {filename}...")
+        symbol_context_str = "No external symbol context provided."
+        if context.symbol_definitions:
+            symbol_context_str = "\n".join([f"- {s}:\n```\n{d}\n```" for s, d in context.symbol_definitions.items()])
+
         try:
             result = chain.invoke(
                 {
                     "filename": filename,
                     "diff": context.diff,
                     "file_content": context.after,
-                    # "symbol_context": "N/A", # Not typically needed for style
+                    "symbol_context": symbol_context_str,
                     "format_instructions": parser.get_format_instructions(),
                 }
             )
             parsed_response: LLMReviewResponse = result['parsed_response']
             raw_comments = parsed_response.comments
-            filtered_comments = filter_comments_to_diff(raw_comments, result['diff'], result['filename'], agent_name="style")
+            filtered_comments = filter_comments_to_diff(raw_comments, result['diff'], result['filename'], agent_name="design")
             all_comments.extend(filtered_comments)
 
         except Exception as e:
-            print(f"[style_agent] Error processing {filename}: {e}")
-            # all_comments.append(Comment(file=filename, line=0, message=f"Style Agent Error: {e}", agent="style"))
+            print(f"[design_agent] Error processing {filename}: {e}")
+            # all_comments.append(Comment(file=filename, line=0, message=f"Design Agent Error: {e}", agent="design"))
 
     if "agent_results" not in state: state["agent_results"] = {}
-    state["agent_results"]["style"] = AgentResult(
-        agent_name="style",
+    state["agent_results"]["design"] = AgentResult(
+        agent_name="design",
         comments=all_comments,
     ).model_dump()
 

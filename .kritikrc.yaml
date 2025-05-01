@@ -4,7 +4,7 @@
 platform: github
 
 # Strategy for how much code context to give the AI: diff, full, or hybrid
-strategy: diff
+strategy: full
 
 # Which LLM model to use (depends on the provider)
 model: gemma-3-27b-it  # or gemma-3-27b-it

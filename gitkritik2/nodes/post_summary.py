@@ -1,3 +1,5 @@
+# gitkritik2/nodes/post_summary.py
+
 import os
 from gitkritik2.core.models import ReviewState
 from gitkritik2.platform.github import post_summary_comment_github
@@ -18,10 +20,13 @@ def post_summary(state: dict) -> dict:
         return state
 
     platform = state.platform
+    print(f"[post_summary] Platform detected: {platform}")
 
     if platform == "github":
+        print("[GitHub] Posting summary comment to Conversation tab")
         post_summary_comment_github(state, summary)
     elif platform == "gitlab":
+        print("[GitLab] Posting summary comment to Changes tab")
         post_summary_comment_gitlab(state, summary)
     else:
         print(f"[post_summary] Unsupported platform: {platform}")

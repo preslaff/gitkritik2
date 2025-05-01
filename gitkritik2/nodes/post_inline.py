@@ -1,3 +1,5 @@
+# gitkritik2/nodes/post_inline.py
+
 import os
 from gitkritik2.core.models import ReviewState
 from gitkritik2.core.utils import ensure_review_state
@@ -11,6 +13,11 @@ def post_inline(state: dict) -> dict:
 
     if os.getenv("GITKRITIK_DRY_RUN") == "true":
         print("[post_inline] Skipping — dry run mode")
+        return state
+
+    inline_enabled = os.getenv("GITKRITIK_INLINE", "false").lower() == "true"
+    if not inline_enabled:
+        print("[post_inline] Skipping — inline comments not enabled (--inline not passed)")
         return state
 
     platform = state.platform
