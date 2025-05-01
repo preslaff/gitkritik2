@@ -7,6 +7,7 @@ from gitkritik2.core.llm_interface import get_llm
 from gitkritik2.core.utils import ensure_review_state
 from gitkritik2.core.tools import get_symbol_definition # Import your tool
 
+
 from langchain_core.prompts import PromptTemplate
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -97,6 +98,15 @@ def _parse_final_answer_for_definitions(final_answer: str) -> Dict[str, str]:
     if "No symbols looked up." in content_after_marker and not definitions:
          print("[_parse_final_answer] Agent indicated no symbols were looked up.")
          pass # Correctly parsed as empty
+
+def context_agent(state: ReviewState) -> ReviewState:
+    print("[context_agent] Performing design-level review")
+    all_comments = []
+    state = ReviewState(**state)
+    for filename, context in state.file_contexts.items():
+        if not context.after:
+            continue
+
 
     if not definitions and definitions_section_marker in final_answer and "No symbols looked up." not in content_after_marker:
          print("[_parse_final_answer] Warning: 'Definitions Fetched:' marker found, but no definitions parsed.")

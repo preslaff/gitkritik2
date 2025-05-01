@@ -7,6 +7,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import Runnable
 
+def summary_agent(state: ReviewState) -> ReviewState:
+    print("[summary_agent] Generating high-level summary")
+    state = ReviewState(**state)
+
 # Define Prompt Template (outside function)
 prompt_template = ChatPromptTemplate.from_messages(
     [

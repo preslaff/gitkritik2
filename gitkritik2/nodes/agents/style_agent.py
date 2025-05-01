@@ -9,6 +9,15 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.runnables import Runnable, RunnablePassthrough
 
+
+def style_agent(state: ReviewState) -> ReviewState:
+    print("[style_agent] Reviewing files for style issues")
+    all_comments = []
+    state = ReviewState(**state)
+    for filename, context in state.file_contexts.items():
+        if not context.after:
+            continue
+
 # 1. Define Parser & Prompt (outside function)
 parser = PydanticOutputParser(pydantic_object=LLMReviewResponse)
 
