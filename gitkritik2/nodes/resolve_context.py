@@ -126,11 +126,6 @@ def get_github_pr_number_via_api(repo_slug: str, branch: str) -> Optional[str]:
 def get_github_pr_number_via_gh_cli(branch: str) -> Optional[str]:
     """Fetches PR number using GitHub CLI ('gh')."""
     print(f"[resolve_context] Trying GitHub CLI ('gh') to find PR for branch '{branch}'...")
-    # Check if gh is installed first?
-    # stdout_check, stderr_check = _run_command(["gh", "--version"])
-    # if stderr_check is not None: # gh command failed
-    #      print("[resolve_context] 'gh' command not found or failed. Skipping CLI check.")
-    #      return None
 
     # Construct command: gh pr list --head <branch> --limit 1 --json number --jq .[0].number
     command = ["gh", "pr", "list", "--head", branch, "--limit", "1", "--json", "number", "--jq", ".[0].number"]

@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "gitkritik" # Package name (lowercase)
 version = "0.2.0" # Increment version after significant refactoring
-description = "AI-powered code review CLI and CI agent for Git, using LangGraph."
-authors = ["Your Name <preslaff@gmail.com>"] # Update with your name
+description = "AI-powered code review CLI and CI agent for Git, using Langchain and LangGraph."
+authors = ["Preslav Penev <preslaff@gmail.com>"] # Update with your name
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/your-username/gitkritik" # Replace with your repo URL

@@ -61,6 +61,10 @@ def render_review_result(final_state: ReviewState, side_by_side: bool = False, s
          file_contexts = final_state.file_contexts # Dict[str, FileContext]
          diff_chunk_map = {path: fc.diff for path, fc in file_contexts.items() if fc.diff}
 
+         # --- DEBUG PRINT (Before Calling Render) ---
+         print(f"[DEBUG] Total comments passed to _render_inline_comments: {len(all_agent_comments)}")
+         # --- END DEBUG ---
+
          _render_inline_comments(all_agent_comments, diff_chunk_map, side_by_side)
     elif show_inline:
          console.print("[yellow]No inline comments generated.[/yellow]")
@@ -105,6 +109,10 @@ def _render_inline_comments(comments: List[Dict], diff_chunk_map: Dict[str, str]
         # Sort comments by line number for processing
         file_comments.sort(key=lambda item: item[0])
 
+        # --- DEBUG PRINT (File Level) ---
+        print(f"[DEBUG] Rendering comments for {file_path}. Number of comments: {len(file_comments)}")
+        # --- END DEBUG ---
+
         if side_by_side:
             # Placeholder: Side-by-side rendering needs significant work
             # to integrate comments cleanly within the rich Table.
@@ -122,6 +130,14 @@ def _render_unified_diff_with_comments(diff_text: str, comments: List[Tuple[int,
     comment_map = defaultdict(list)
     for line_num, comment_data in comments:
         comment_map[line_num].append(comment_data)
+
+    # --- DEBUG PRINT ---
+    if comment_map:
+        print(f"[DEBUG DISPLAY] Comment Map Keys: {list(comment_map.keys())}")
+        # Optionally print full map if not too large: print(f"[DEBUG DISPLAY] Comment Map: {dict(comment_map)}")
+    else:
+         print("[DEBUG DISPLAY] Comment Map is EMPTY for this file.")
+    # --- END DEBUG PRINT ---
 
     current_new_line = 0
     hunk_header_pattern = re.compile(r'^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@')
@@ -147,6 +163,7 @@ def _render_unified_diff_with_comments(diff_text: str, comments: List[Tuple[int,
         if line.startswith('+') and not line.startswith('+++'):
             current_new_line += 1
             line_num_to_check = current_new_line
+            style = "green"
             # Create Text object with line number and code, apply style
             rendered_text = Text.assemble(
                 (f"{current_new_line:>4} + ", CONTEXT_STYLE), # Line number in default style
