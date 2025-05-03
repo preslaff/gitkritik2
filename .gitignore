@@ -17,6 +17,7 @@ build/
 
 # Poetry (optional)
 poetry.lock
+*.tok
 
 # Virtual environments
 .venv/
