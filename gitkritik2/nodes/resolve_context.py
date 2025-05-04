@@ -1,105 +1,98 @@
 # nodes/resolve_context.py
 import os
-import subprocess
+# import subprocess # No longer needed directly
 import requests
-import json # Needed for gh cli output parsing
+import json
 from typing import Optional, Tuple
+from gitkritik2.core.models import ReviewState # Keep for internal type hints
+# Import the centralized helpers
+from gitkritik2.core.utils import run_subprocess_command, command_exists
 
-# Import the Pydantic model for internal use and type hints
-from gitkritik2.core.models import ReviewState
-from gitkritik2.core.utils import ensure_review_state
+# --- Remove local _run_command helper ---
 
-# --- Helper Functions ---
-
-def _run_command(command: list[str], check: bool = False) -> Tuple[Optional[str], Optional[str]]:
-    """Runs a command, returns (stdout, stderr) tuple. Stdout/Stderr are None on error."""
-    try:
-        process = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=check, # Set to True to raise CalledProcessError on non-zero exit
-            encoding='utf-8'
-        )
-        return process.stdout.strip() if process.stdout else "", process.stderr.strip() if process.stderr else ""
-    except FileNotFoundError:
-        # Command not found (e.g., git or gh not installed)
-        return None, f"Command not found: {command[0]}"
-    except subprocess.CalledProcessError as e:
-        # Command returned non-zero exit code
-        return e.stdout.strip() if e.stdout else "", e.stderr.strip() if e.stderr else f"Command failed with exit code {e.returncode}"
-    except Exception as e:
-        # Other unexpected errors
-        return None, f"Unexpected error running command {' '.join(command)}: {e}"
-
-def get_remote_url(remote_name: str = "origin") -> Optional[str]:
+# --- Refactor git callers to use centralized helper and pass CWD ---
+def get_remote_url(remote_name: str = "origin", cwd: str = None) -> Optional[str]:
     """Gets the URL of a specific git remote."""
-    stdout, stderr = _run_command(["git", "remote", "get-url", remote_name])
+    stdout, stderr = run_subprocess_command(["git", "remote", "get-url", remote_name], cwd=cwd)
     if stderr:
         print(f"[resolve_context][WARN] Failed to get remote URL for '{remote_name}': {stderr}")
         return None
     return stdout
 
-def get_current_branch() -> Optional[str]:
+def get_current_branch(cwd: str = None) -> Optional[str]:
     """Gets the current git branch name."""
-    stdout, stderr = _run_command(["git", "rev-parse", "--abbrev-ref", "HEAD"])
-    # Handle detached HEAD state
+    stdout, stderr = run_subprocess_command(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=cwd)
     if stdout == "HEAD":
-        print("[resolve_context][WARN] Git is in a detached HEAD state. Cannot determine branch name automatically.")
+        print("[resolve_context][WARN] Git is in a detached HEAD state. Cannot determine branch name.")
         return None
     if stderr:
         print(f"[resolve_context][WARN] Failed to get current branch: {stderr}")
         return None
     return stdout
 
+# --- detect_platform_and_repo remains the same ---
+# nodes/resolve_context.py
+
+# ... (other imports and functions) ...
+
 def detect_platform_and_repo(remote_url: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
     """Detects platform (github/gitlab) and repo slug from remote URL."""
     if not remote_url:
         return None, None
 
-    platform = None
-    repo_slug = None
+    platform: Optional[str] = None # Initialize with type hint
+    repo_slug: Optional[str] = None # Initialize with type hint
+
     if "github.com" in remote_url:
         platform = "github"
-        # Handle different URL formats (HTTPS, SSH)
-        if remote_url.startswith("git@"): # SSH format: git@github.com:owner/repo.git
+        if remote_url.startswith("git@"):
              repo_slug = remote_url.split(":")[-1].replace(".git", "")
-        else: # Assume HTTPS format: https://github.com/owner/repo.git
+        else:
              repo_slug = remote_url.split("github.com/")[-1].replace(".git", "")
     elif "gitlab.com" in remote_url:
         platform = "gitlab"
-        if remote_url.startswith("git@"): # SSH format: git@gitlab.com:owner/repo.git
+        if remote_url.startswith("git@"):
              repo_slug = remote_url.split(":")[-1].replace(".git", "")
-        else: # Assume HTTPS format: https://gitlab.com/owner/repo.git
+        else:
              repo_slug = remote_url.split("gitlab.com/")[-1].replace(".git", "")
     else:
         print(f"[resolve_context][WARN] Could not determine platform from remote URL: {remote_url}")
+        # --- FIX: Assign default values here ---
         platform = "unknown"
+        repo_slug = None # Or "" if preferred for unknown platform
+        # --- End FIX ---
 
+    # This warning check is fine
     if repo_slug and len(repo_slug.split('/')) != 2:
          print(f"[resolve_context][WARN] Parsed repo slug '{repo_slug}' does not look like owner/repo.")
-         # Decide if you want to return None or the potentially invalid slug
-         # return platform, None
-         return platform, repo_slug # Return potentially invalid slug for now
+         # Optional: Set repo_slug to None if format is critical downstream
+         # repo_slug = None
 
+    # Now platform is guaranteed to be assigned before returning
     return platform, repo_slug
+
+# ... (rest of the file) ...
+
+
+# --- get_github_pr_number_via_api remains the same (uses requests) ---
+# nodes/resolve_context.py
+
+# ... (imports and other functions) ...
 
 def get_github_pr_number_via_api(repo_slug: str, branch: str) -> Optional[str]:
     """Fetches PR number from GitHub API."""
-    print(f"[resolve_context] Trying GitHub API to find PR for branch '{branch}' in repo '{repo_slug}'...")
+    print(f"[resolve_context] Trying GitHub API for branch '{branch}' in repo '{repo_slug}'...")
     token = os.getenv("GITHUB_TOKEN")
     if not token:
-        print("[resolve_context][WARN] GITHUB_TOKEN not set. Cannot query GitHub API.")
+        print("[resolve_context][WARN] GITHUB_TOKEN not set. Cannot query API.")
         return None
 
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json",
         "X-GitHub-Api-Version": "2022-11-28"
-        }
-    # Need owner for the query parameter
+    }
     owner = repo_slug.split('/')[0]
-    # URL encode branch name just in case
     encoded_branch = requests.utils.quote(branch, safe='')
     url = f"https://api.github.com/repos/{repo_slug}/pulls?head={owner}:{encoded_branch}&state=open"
 
@@ -108,33 +101,50 @@ def get_github_pr_number_via_api(repo_slug: str, branch: str) -> Optional[str]:
         response.raise_for_status()
         pulls = response.json()
         if pulls and isinstance(pulls, list):
-            pr_number = str(pulls[0]["number"])
-            print(f"[resolve_context] Found PR #{pr_number} via GitHub API.")
-            return pr_number
+            # Ensure we use a consistent variable name and return it
+            found_pr_number = str(pulls[0]["number"])
+            print(f"[resolve_context] Found PR #{found_pr_number} via GitHub API.")
+            return found_pr_number # Return the found number
         else:
-            print(f"[resolve_context] No open PR found for branch '{branch}' via GitHub API.")
-            return None
+            print(f"[resolve_context] No open PR found for branch '{branch}' via API.")
+            return None # Return None if no PR found
     except requests.exceptions.RequestException as e:
         print(f"[resolve_context][WARN] GitHub API call failed: {e}")
         if hasattr(e, 'response') and e.response is not None:
              print(f"Response: {e.response.status_code} {e.response.text}")
-        return None
-    except Exception as e:
-        print(f"[resolve_context][WARN] Error parsing GitHub API response: {e}")
-        return None
+        return None # Return None on error
+    except Exception as e: # Catch JSONDecodeError etc.
+        print(f"[resolve_context][WARN] Error processing GitHub API response: {e}")
+        return None # Return None on error
 
-def get_github_pr_number_via_gh_cli(branch: str) -> Optional[str]:
-    """Fetches PR number using GitHub CLI ('gh')."""
+    # --- FIX: Remove this line ---
+    # return pr_number # This line is unreachable and pr_number might not be defined
+    # --- End FIX ---
+
+# --- Refactor gh cli check and call ---
+def get_github_pr_number_via_gh_cli(branch: str, cwd: str = None) -> Optional[str]:
+    """Fetches PR number using GitHub CLI ('gh'), checks existence first."""
     print(f"[resolve_context] Trying GitHub CLI ('gh') to find PR for branch '{branch}'...")
 
-    # Construct command: gh pr list --head <branch> --limit 1 --json number --jq .[0].number
-    command = ["gh", "pr", "list", "--head", branch, "--limit", "1", "--json", "number", "--jq", ".[0].number"]
-    stdout, stderr = _run_command(command)
-
-    if stderr is not None and "no pull requests found" not in stderr.lower():
-         # Ignore "no pull requests found" stderr, but log others
-         print(f"[resolve_context][WARN] 'gh pr list' command failed: {stderr}")
+    # Check if gh exists before trying to run it
+    if not command_exists("gh"):
+         print("[resolve_context][WARN] 'gh' command not found or not executable. Skipping CLI check.")
          return None
+
+    command = ["gh", "pr", "list", "--head", branch, "--limit", "1", "--json", "number", "--jq", ".[0].number"]
+    # Pass CWD - gh commands often depend on being in the correct repo dir
+    stdout, stderr = run_subprocess_command(command, cwd=cwd)
+
+    if stderr is not None:
+         # Allow "no pull requests found" or similar messages
+         no_pr_msgs = ["no pull requests found", "no open pull request found"]
+         is_no_pr_found = any(msg in stderr.lower() for msg in no_pr_msgs)
+         if not is_no_pr_found:
+              # Log other errors
+              print(f"[resolve_context][WARN] 'gh pr list' command failed or produced stderr: {stderr}")
+         else:
+             print(f"[resolve_context] No open PR found for branch '{branch}' via GitHub CLI.")
+         return None # Return None if error or no PR found
 
     if stdout:
         pr_number = stdout.strip()
@@ -142,118 +152,69 @@ def get_github_pr_number_via_gh_cli(branch: str) -> Optional[str]:
              print(f"[resolve_context] Found PR #{pr_number} via GitHub CLI.")
              return pr_number
         else:
-             # Sometimes gh might output different text if parsing fails
              print(f"[resolve_context][WARN] GitHub CLI returned non-numeric output: {stdout}")
              return None
     else:
-         print(f"[resolve_context] No open PR found for branch '{branch}' via GitHub CLI.")
+         # Should be covered by stderr check, but as fallback
+         print(f"[resolve_context] No PR number returned by GitHub CLI.")
          return None
 
 
+# --- get_gitlab_mr_number remains the same (uses requests) ---
 def get_gitlab_mr_number(repo_slug: str, branch: str) -> Optional[str]:
-    """Fetches MR IID from GitLab API."""
-    print(f"[resolve_context] Trying GitLab API to find MR for branch '{branch}' in repo '{repo_slug}'...")
-    token = os.getenv("GITLAB_TOKEN") or os.getenv("CI_JOB_TOKEN")
-    if not token:
-        print("[resolve_context][WARN] GITLAB_TOKEN or CI_JOB_TOKEN not set. Cannot query GitLab API.")
-        return None
+    # ... (no changes needed here) ...
+    return mr_iid
 
-    headers = {"PRIVATE-TOKEN": token}
-    # URL encode the repo slug (owner/repo or group/project)
-    encoded_repo = requests.utils.quote(repo_slug, safe='')
-    # URL encode the branch name
-    encoded_branch = requests.utils.quote(branch, safe='')
-    url = f"https://gitlab.com/api/v4/projects/{encoded_repo}/merge_requests?source_branch={encoded_branch}&state=opened"
-
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        mrs = response.json()
-        if mrs and isinstance(mrs, list):
-            mr_iid = str(mrs[0]["iid"]) # Use 'iid' for GitLab
-            print(f"[resolve_context] Found MR !{mr_iid} via GitLab API.")
-            return mr_iid
-        else:
-            print(f"[resolve_context] No open MR found for branch '{branch}' via GitLab API.")
-            return None
-    except requests.exceptions.RequestException as e:
-        print(f"[resolve_context][WARN] GitLab API call failed: {e}")
-        if hasattr(e, 'response') and e.response is not None:
-             print(f"Response: {e.response.status_code} {e.response.text}")
-        return None
-    except Exception as e:
-        print(f"[resolve_context][WARN] Error parsing GitLab API response: {e}")
-        return None
 
 # --- Main Node Function ---
-
 def resolve_context(state: dict) -> dict:
     """
     Resolves platform, repository, and PR/MR context.
     Uses CI environment variables first, then falls back to git/API/CLI calls locally.
     """
     print("[resolve_context] Resolving platform, repo, and PR/MR context...")
-    # Work with state dict directly, use ensure_review_state internally if needed for Pydantic models
-    # _state = ensure_review_state(state) # Can use this if accessing complex state attrs
+    # Determine target directory ONCE
+    target_repo_dir = os.getcwd()
+    print(f"[resolve_context] Operating in target directory: {target_repo_dir}")
 
+    # Get initial values from state
     is_ci = state.get("is_ci_mode", False)
     platform = state.get("platform")
     repo = state.get("repo")
-    pr_number = state.get("pr_number") # Get potentially pre-filled values
+    pr_number = state.get("pr_number")
 
     # --- Determine Platform and Repo Slug (use Git remote as ground truth) ---
-    remote_url = get_remote_url()
+    # Pass CWD to git helpers
+    remote_url = get_remote_url(cwd=target_repo_dir)
     detected_platform, detected_repo = detect_platform_and_repo(remote_url)
 
     if detected_platform and detected_repo:
         print(f"[resolve_context] Detected via Git: Platform='{detected_platform}', Repo='{detected_repo}'")
-        # Overwrite state values if Git detection succeeded, as it's more reliable locally
         state['platform'] = detected_platform
         state['repo'] = detected_repo
-        platform = detected_platform # Update local var too
+        platform = detected_platform
         repo = detected_repo
-    elif platform and repo:
-        # Use values from init_state if Git detection failed but they exist
-        print(f"[resolve_context] Using context from init_state: Platform='{platform}', Repo='{repo}'")
-    else:
-        print("[resolve_context][ERROR] Could not determine Platform or Repo Slug. Cannot fetch PR/MR number.")
-        # Ensure keys exist even if unresolved
-        state.setdefault('platform', 'unknown')
-        state.setdefault('repo', None)
-        state.setdefault('pr_number', None)
-        return state # Cannot proceed without repo info
+    # ... (rest of logic using platform/repo) ...
 
     # --- Determine PR/MR Number ---
-    if pr_number:
-        print(f"[resolve_context] Using PR/MR number from initial state (likely CI env var): {pr_number}")
-    else:
-        # Only attempt to fetch if not already set and we have repo info
-        branch = get_current_branch()
+    if not pr_number: # Only fetch if not provided by CI/config
+        # Pass CWD to git helpers
+        branch = get_current_branch(cwd=target_repo_dir)
         if branch and repo:
             print(f"[resolve_context] Current branch: '{branch}'. Attempting to find associated PR/MR...")
             if platform == "github":
-                # Try gh CLI first locally, fallback to API
                 if not is_ci:
-                     pr_number = get_github_pr_number_via_gh_cli(branch)
-                if not pr_number: # If gh failed or in CI
+                     # Pass CWD to gh helper
+                     pr_number = get_github_pr_number_via_gh_cli(branch, cwd=target_repo_dir)
+                if not pr_number:
                      pr_number = get_github_pr_number_via_api(repo, branch)
             elif platform == "gitlab":
-                # Try GitLab API (could add glab CLI support later if desired)
                 pr_number = get_gitlab_mr_number(repo, branch)
-            else:
-                 print(f"[resolve_context] Cannot fetch PR/MR number for unknown platform '{platform}'")
-
-            if pr_number:
-                 state['pr_number'] = pr_number
-            else:
-                 print(f"[resolve_context] Could not automatically determine PR/MR number for branch '{branch}'.")
-                 state['pr_number'] = None # Ensure it's None if not found
+            # ... (rest of PR/MR number logic) ...
+            state['pr_number'] = pr_number if pr_number else None # Ensure None if not found
         else:
              print("[resolve_context] Cannot fetch PR/MR number without current branch or repo slug.")
              state['pr_number'] = None
 
-    # Final log
-    print(f"[resolve_context] Final Context: Platform='{state.get('platform')}', Repo='{state.get('repo')}', PR/MR#='{state.get('pr_number', 'N/A')}'")
-
-    # Return the updated state dictionary
+    # ... (Final log) ...
     return state

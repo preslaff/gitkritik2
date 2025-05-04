@@ -1,50 +1,55 @@
 # nodes/prepare_context.py
-import subprocess
+import os
 from typing import List, Optional, Dict
-from gitkritik2.core.models import FileContext # Keep for internal structure/typing
-# from gitkritik2.core.utils import ensure_review_state # Not needed
+# Keep FileContext import if used for type hints internally
+from gitkritik2.core.models import FileContext
+# Import the centralized helpers
+from gitkritik2.core.utils import run_subprocess_command, get_merge_base
 
-def _run_git_command(command: List[str]) -> Optional[str]:
-    """Helper duplicated for simplicity, move to shared utils if preferred."""
-    try:
-        result = subprocess.run(command, capture_output=True, text=True, check=True, encoding='utf-8')
-        return result.stdout
-    except Exception: # Catch broad exceptions here as content might be missing legitimately
-        return None
+# --- Remove local helper functions _run_git_command, _get_merge_base ---
 
-def _get_merge_base(base_branch: str = "origin/main") -> Optional[str]:
-    """Helper duplicated for simplicity."""
-    try:
-        # Ensure remote is updated (optional, detect_changes might do it)
-        # subprocess.run(["git", "fetch", "origin", "--prune", "--quiet"], check=True)
-        base = subprocess.run(["git", "merge-base", base_branch, "HEAD"], capture_output=True, text=True, check=True, encoding='utf-8')
-        return base.stdout.strip()
-    except Exception:
-        print(f"[WARN] Failed to get merge base with {base_branch} in prepare_context.")
-        return None
-
-def get_file_content_from_git(ref: str, filepath: str) -> Optional[str]:
-    """Gets file content at a specific git reference."""
-    # Basic path sanitization
+# --- Refactor file content/diff getters to use centralized helper and CWD ---
+def get_file_content_from_git(ref: str, filepath: str, cwd: str) -> Optional[str]:
+    """Gets file content at a specific git reference, using specified CWD."""
     if ".." in filepath or filepath.startswith("/"):
         print(f"[WARN] Invalid file path requested: {filepath}")
         return None
-    return _run_git_command(["git", "show", f"{ref}:{filepath}"])
+    # Use check=False, failure might mean file didn't exist at ref (which is valid)
+    stdout, stderr = run_subprocess_command(["git", "show", f"{ref}:{filepath}"], cwd=cwd, check=False)
+    if stderr is not None:
+        print(f"[WARN] `git show {ref}:{filepath}` failed: {stderr}")
+        return None # Return None on error
+    return stdout # Might be empty string if file was empty
 
-def get_diff_for_file(base_ref: str, filepath: str) -> Optional[str]:
-    """Gets the specific diff for a single file against the base reference."""
+def get_diff_for_file(base_ref: str, filepath: str, cwd: str) -> Optional[str]:
+    """Gets the specific diff for a single file against the base reference, using specified CWD."""
     if ".." in filepath or filepath.startswith("/"):
         print(f"[WARN] Invalid file path requested for diff: {filepath}")
         return None
-    # Using unified=0 might miss important context for LLMs, use default unified diff
-    return _run_git_command(["git", "diff", base_ref, "--", filepath])
+    # Use check=False, failure might mean file didn't exist at base_ref
+    stdout, stderr = run_subprocess_command(
+        ["git", "diff", "--patch-with-raw", base_ref, "--", filepath], # Use patch-with-raw for better parsing? Or stick to default.
+        cwd=cwd,
+        check=False
+    )
+    if stderr is not None:
+         print(f"[WARN] `git diff {base_ref} -- {filepath}` failed: {stderr}")
+         # Decide if you want diff content even if command warned/failed partially
+         # return stdout if stdout else None
+         return None # Safer to return None if diff command had issues
+    return stdout
 
+# --- Main Node Function ---
 def prepare_context(state: dict) -> dict:
     """
     Prepares FileContext objects (as dicts) for each changed file,
-    including before/after content and diffs relative to the merge base.
+    including before/after content and diffs relative to the merge base. Uses CWD.
     """
     print("[prepare_context] Preparing file context and diffs")
+    # Determine target directory ONCE
+    target_repo_dir = os.getcwd()
+    print(f"[prepare_context] Operating in target directory: {target_repo_dir}")
+
     changed_files: List[str] = state.get("changed_files", [])
     file_contexts: Dict[str, dict] = {} # Store FileContext info as dicts
 
@@ -53,50 +58,46 @@ def prepare_context(state: dict) -> dict:
         state["file_contexts"] = {}
         return state
 
-    # Determine the base reference (consistent with detect_changes default logic)
-    base_ref = _get_merge_base()
+    # Determine the base reference using the utility function with CWD
+    base_ref = get_merge_base(cwd=target_repo_dir)
     if not base_ref:
-        print("[ERROR] Cannot prepare context: Failed to determine merge base. Trying origin/main.")
-        # Fallback, might be inaccurate if origin/main isn't fetched or relevant
-        base_ref = "origin/main"
+        print("[ERROR] Cannot prepare context: Failed to determine merge base. Trying origin/main as fallback.")
+        base_ref = "origin/main" # Fallback
 
     print(f"[prepare_context] Using base reference: {base_ref}")
 
     for filepath in changed_files:
         print(f"  Processing: {filepath}")
-        # Get content before the changes
-        before_content = get_file_content_from_git(base_ref, filepath)
+        # Pass CWD to helper functions
+        before_content = get_file_content_from_git(base_ref, filepath, cwd=target_repo_dir)
 
-        # Get content after the changes (from working directory)
         after_content: Optional[str] = None
+        # --- Reading 'after' content using absolute path derived from CWD ---
+        absolute_filepath = os.path.abspath(os.path.join(target_repo_dir, filepath))
         try:
-            # Ensure working dir path is correct relative to where script runs
-            # Assuming script runs from repo root
-            with open(filepath, "r", encoding="utf-8") as f:
-                after_content = f.read()
-        except FileNotFoundError:
-             # File might have been deleted in the current changes
-             print(f"    File not found in working directory (possibly deleted): {filepath}")
-             after_content = None # Explicitly None for deleted files
+            if os.path.exists(absolute_filepath) and os.path.isfile(absolute_filepath):
+                with open(absolute_filepath, "r", encoding="utf-8") as f:
+                    after_content = f.read()
+            else:
+                 # File exists in git diff list but not on disk (e.g., deleted)
+                 print(f"    File not found in working directory (possibly deleted): {absolute_filepath}")
+                 after_content = None # Correct state for deleted file
         except Exception as e:
-             print(f"    Error reading file from working directory {filepath}: {e}")
-             after_content = f"[ERROR] Could not read file: {e}" # Store error
+             print(f"    Error reading file from working directory {absolute_filepath}: {e}")
+             after_content = f"[ERROR] Could not read file: {e}"
 
-        # Get the specific diff for this file
-        file_diff = get_diff_for_file(base_ref, filepath)
+        # Pass CWD to helper function
+        file_diff = get_diff_for_file(base_ref, filepath, cwd=target_repo_dir)
 
         # Create FileContext data as a dictionary
         file_contexts[filepath] = {
-            "path": filepath,
-            "before": before_content, # Will be None if added file or git error
-            "after": after_content,   # Will be None if deleted file or read error
-            "diff": file_diff,       # Will be None if git diff failed
-            "strategy": state.get("strategy", "hybrid"), # Carry over strategy
-            "symbol_definitions": {}, # Initialize empty dict for context_agent
+            "path": filepath, # Keep relative path as key/identifier
+            "before": before_content,
+            "after": after_content,
+            "diff": file_diff,
+            "strategy": state.get("strategy", "hybrid"),
+            "symbol_definitions": {}, # Initialize for context_agent
         }
 
     state["file_contexts"] = file_contexts
-    # 'context_chunks' doesn't seem necessary if agents use file_contexts directly
-    # state.pop("context_chunks", None) # Remove if not used downstream
-
     return state

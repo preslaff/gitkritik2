@@ -28,6 +28,11 @@ def main(
 ):
     """Runs AI code review on Git changes."""
 
+    # --- Capture Target Directory ---
+    target_repo_dir = os.getcwd()
+    print(f"[CLI Main] Target Repository Directory: {target_repo_dir}")
+    # --- End Capture ---
+
     # --- Environment Setup ---
     is_ci_mode = ci or os.getenv("GITHUB_ACTIONS") == "true" or os.getenv("GITLAB_CI") == "true"
     os.environ["GITKRITIK_CI_MODE"] = "true" if is_ci_mode else "false"
@@ -51,14 +56,17 @@ def main(
     # --- Initialize State Dictionary ---
     # Start with flags needed by early nodes (init_state will load more)
     initial_state_dict = {
-        "config_file_path": config, # Pass config path to init_state
+        # --- Add Target Directory to State ---
+        "target_repo_dir": target_repo_dir,
+        # --- End Add ---
+        "config_file_path": config,
         "review_unstaged": unstaged,
         "review_all_files": all_files,
         "is_ci_mode": is_ci_mode,
         "dry_run": dry_run,
-        "show_inline_locally": inline, # For local display control
-        "side_by_side_display": side_by_side, # For local display control
-        # Initialize empty containers expected by later nodes
+        "show_inline_locally": inline,
+        "side_by_side_display": side_by_side,
+        # Initialize empty containers
         "changed_files": [],
         "file_contexts": {},
         "agent_results": {},
